@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iconbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#132844"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E0F2FE"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+  </defs>
+    <rect width="512" height="512" rx="112" fill="url(#iconbg)"/>
+    <rect x="18" y="138" width="86" height="190" rx="22" fill="#1E293B"/>
+    <rect x="408" y="138" width="86" height="190" rx="22" fill="#1E293B"/>
+    <rect x="34" y="214" width="54" height="10" rx="5" fill="#334155"/>
+    <rect x="424" y="214" width="54" height="10" rx="5" fill="#334155"/>
+    <rect x="112" y="104" width="288" height="258" rx="30" fill="none" stroke="#A3E635" stroke-width="8"/>
+    <rect x="124" y="116" width="264" height="234" rx="20" fill="url(#sky)"/>
+    <circle cx="322" cy="174" r="26" fill="#A3E635"/>
+    <path d="M124 318 L200 236 L252 290 L292 254 L388 334 L388 330 Q388 350 368 350 L144 350 Q124 350 124 330 Z" fill="#0F172A"/>
+    <path d="M200 236 L252 290 L230 312 L168 270 Z" fill="#334155"/>
+    <circle cx="112" cy="233" r="30" fill="#FFFFFF"/>
+    <path d="M118 219 L104 233 L118 247" fill="none" stroke="#0F172A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="400" cy="233" r="30" fill="#FFFFFF"/>
+    <path d="M394 219 L408 233 L394 247" fill="none" stroke="#0F172A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="196" cy="418" r="11" fill="#475569"/>
+    <rect x="222" y="407" width="68" height="22" rx="11" fill="#A3E635"/>
+    <circle cx="316" cy="418" r="11" fill="#475569"/>
+</svg>
