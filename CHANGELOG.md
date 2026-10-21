@@ -6,6 +6,12 @@ All notable changes to `amjadiqbal/laravel-swiper` are documented here. The form
 
 ## [Unreleased]
 
+### Fixed
+
+- Autoplay could freeze after keyboard focus left a carousel: Swiper 14's `autoplay.resume()` can report
+  running without advancing. Focus now stops and restarts autoplay instead, and the pause button keeps
+  saying "Pause" while focus is inside.
+
 ## [1.0.0] - 2026-10-21
 
 First release.

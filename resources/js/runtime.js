@@ -58,14 +58,22 @@
     var toggle = child(el, '.laravel-swiper-toggle');
     if (!toggle || !swiper.autoplay) return;
 
+    // Stopped only because keyboard focus is inside: the button still offers "Pause".
+    var focusStopped = false;
+
+    function userPaused() {
+      return el.hasAttribute('data-swiper-user-paused');
+    }
+
     function render() {
-      var paused = !swiper.autoplay.running || el.hasAttribute('data-swiper-user-paused');
+      var paused = userPaused() || (!swiper.autoplay.running && !focusStopped);
       toggle.toggleAttribute('data-paused', paused);
       toggle.setAttribute('aria-label', paused ? labels.play : labels.pause);
     }
 
     toggle.addEventListener('click', function () {
-      if (el.hasAttribute('data-swiper-user-paused') || !swiper.autoplay.running) {
+      focusStopped = false;
+      if (userPaused()) {
         el.removeAttribute('data-swiper-user-paused');
         swiper.autoplay.start();
       } else {
@@ -75,13 +83,18 @@
       render();
     }, { signal: signal });
 
-    // WCAG 2.2.2: moving content stops while keyboard focus is inside it.
+    // WCAG 2.2.2: moving content stops while keyboard focus is inside it. stop()/start(), not
+    // pause()/resume(): Swiper 14's resume() can leave autoplay "running" without ever advancing.
     el.addEventListener('focusin', function (event) {
-      if (event.target !== toggle && swiper.autoplay.running) swiper.autoplay.pause();
+      if (event.target !== toggle && swiper.autoplay.running && !userPaused()) {
+        focusStopped = true;
+        swiper.autoplay.stop();
+      }
     }, { signal: signal });
     el.addEventListener('focusout', function (event) {
-      if (!el.contains(event.relatedTarget) && swiper.autoplay.running && swiper.autoplay.paused && !el.hasAttribute('data-swiper-user-paused')) {
-        swiper.autoplay.resume();
+      if (focusStopped && !el.contains(event.relatedTarget)) {
+        focusStopped = false;
+        if (!userPaused() && !swiper.destroyed) swiper.autoplay.start();
       }
     }, { signal: signal });
 
