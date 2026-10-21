@@ -99,6 +99,35 @@ it('renders image slides from a collection with responsive, lazy images', functi
         ->and(substr_count($html, 'swiper-lazy-preloader'))->toBe(1);
 });
 
+it('never renders an unsafe link from a link field', function () {
+    $html = Blade::render('<x-swiper :images="$images" />', ['images' => [
+        ['src' => 'https://cdn.test/1.jpg', 'href' => 'javascript:alert(document.cookie)'],
+        ['src' => 'https://cdn.test/2.jpg', 'href' => '/safe'],
+    ]]);
+
+    expect($html)->not->toContain('javascript:')
+        ->toContain('<a href="/safe" class="laravel-swiper-link">')
+        ->and(substr_count($html, 'class="laravel-swiper-link"'))->toBe(1);
+});
+
+it('keeps the hash stable when signed URLs change between renders', function () {
+    Storage::fake('private');
+    $n = 0;
+    Storage::disk('private')->buildTemporaryUrlsUsing(function (string $path) use (&$n) {
+        return 'https://signed.test/'.$path.'?sig='.(++$n);
+    });
+    config(['swiper.images.temporary_urls' => ['private' => 30]]);
+
+    $render = fn () => Blade::render('<x-swiper id="vault" :images="[\'a.jpg\', \'b.jpg\']" disk="private" />');
+    preg_match('/data-swiper-hash="([a-f0-9]+)"/', $first = $render(), $a);
+    app()->forgetScopedInstances();
+    preg_match('/data-swiper-hash="([a-f0-9]+)"/', $second = $render(), $b);
+
+    expect($first)->toContain('?sig=1')
+        ->and($second)->not->toContain('?sig=1"')
+        ->and($a[1])->toBe($b[1]);
+});
+
 it('renders every image in a disk folder', function () {
     Storage::disk('public')->put('slides/b.jpg', 'x');
     Storage::disk('public')->put('slides/a.png', 'x');

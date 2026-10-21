@@ -77,6 +77,12 @@ return [
     | Null means no generated srcset (Spatie Media Library items still get
     | their own). For full control: Swiper::srcsetUsing(fn ($image, $width) => ...).
     |
+    | "temporary_urls": private disks and buckets. Minutes a signed URL from
+    | temporaryUrl() stays valid, for every disk (e.g. 60) or per disk
+    | (['s3-private' => 60, 'local' => 30]). Null uses the disk's plain url().
+    | A Livewire update that leaves a carousel unchanged keeps the URLs it
+    | already has, so pick a lifetime longer than a visit.
+    |
     | "folder_cache": seconds to cache the file list of a :folder carousel
     | (useful on S3). Null or 0 lists the folder on every render.
     |
@@ -88,6 +94,7 @@ return [
         'widths' => [480, 800, 1200, 1600, 2000],
         'extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'],
         'folder_cache' => null,
+        'temporary_urls' => null,
     ],
 
 ];

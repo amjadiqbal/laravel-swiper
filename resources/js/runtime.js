@@ -187,8 +187,11 @@
     });
   }
 
+  // root itself may be a carousel, or contain some.
   function destroyAll(root) {
-    (root || document).querySelectorAll(SELECTOR).forEach(destroy);
+    var scope = root && root.querySelectorAll ? root : document;
+    if (scope !== document && scope.matches && scope.matches(SELECTOR)) destroy(scope);
+    scope.querySelectorAll(SELECTOR).forEach(destroy);
   }
 
   // Arrow keys move only the carousel holding focus, or the one last clicked or touched while it

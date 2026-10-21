@@ -94,7 +94,9 @@ class ImageResolver
         ?string $conversion,
     ): ?Image {
         if ($item instanceof Image) {
-            return $item;
+            return $item->href === null || SafeUrl::href($item->href) === $item->href
+                ? $item
+                : new Image($item->src, $item->alt, $item->srcset, $item->caption, null, $item->width, $item->height, $item->path);
         }
 
         if (is_string($item)) {
@@ -102,21 +104,25 @@ class ImageResolver
         }
 
         if ($this->isMedia($item)) {
-            return $this->fromMedia($item, $conversion, $this->text($item, $altField, []), $this->text($item, $captionField, []), $this->text($item, $linkField, []));
+            return $this->fromMedia($item, $conversion, $this->text($item, $altField, []), null, $this->text($item, $captionField, []), SafeUrl::href($this->text($item, $linkField, [])));
         }
 
         if (! is_array($item) && ! is_object($item)) {
             return null;
         }
 
-        $alt = $this->text($item, $altField, self::ALT_FIELDS) ?? '';
         $caption = $this->text($item, $captionField, ['caption']);
-        $href = $this->text($item, $linkField, ['href', 'link']);
+        $href = SafeUrl::href($this->text($item, $linkField, ['href', 'link']));
         $source = $this->value($item, $imageField, self::IMAGE_FIELDS);
 
         if ($this->isMedia($source)) {
-            return $this->fromMedia($source, $conversion, $alt, $caption, $href);
+            // A named alt field wins; otherwise the media's own alt text comes before the model's title or name.
+            return $altField !== null
+                ? $this->fromMedia($source, $conversion, $this->text($item, $altField, []) ?? '', null, $caption, $href)
+                : $this->fromMedia($source, $conversion, null, $this->text($item, null, self::ALT_FIELDS), $caption, $href);
         }
+
+        $alt = $this->text($item, $altField, self::ALT_FIELDS) ?? '';
 
         if (! is_string($source) || $source === '') {
             return null;
@@ -146,7 +152,31 @@ class ImageResolver
             return $pathOrUrl;
         }
 
-        return Storage::disk($this->disk($disk))->url($pathOrUrl);
+        $disk = $this->disk($disk);
+        $filesystem = Storage::disk($disk);
+        $minutes = $this->temporaryUrlMinutes($disk);
+
+        if ($minutes > 0 && $filesystem->providesTemporaryUrls()) {
+            return $filesystem->temporaryUrl($pathOrUrl, now()->addMinutes($minutes));
+        }
+
+        return $filesystem->url($pathOrUrl);
+    }
+
+    /**
+     * Minutes a signed URL stays valid for this disk, from swiper.images.temporary_urls:
+     * a number for every disk, or ['disk-name' => minutes]. 0 means plain url().
+     */
+    protected function temporaryUrlMinutes(?string $disk): int
+    {
+        $setting = config('swiper.images.temporary_urls');
+        $name = $disk ?? (string) config('filesystems.default');
+
+        if (is_array($setting)) {
+            $setting = $setting[$name] ?? null;
+        }
+
+        return is_numeric($setting) ? max(0, (int) $setting) : 0;
     }
 
     protected function isUrl(string $value): bool
@@ -167,7 +197,10 @@ class ImageResolver
         return is_object($value) && method_exists($value, 'getUrl') && method_exists($value, 'getSrcset');
     }
 
-    protected function fromMedia(object $media, ?string $conversion, ?string $alt, ?string $caption, ?string $href): Image
+    /**
+     * Alt text: $alt if given, else the media's "alt" custom property, else $fallbackAlt, else the media name.
+     */
+    protected function fromMedia(object $media, ?string $conversion, ?string $alt, ?string $fallbackAlt, ?string $caption, ?string $href): Image
     {
         $conversion ??= '';
         /** @var string $src */
@@ -177,7 +210,7 @@ class ImageResolver
 
         $image = new Image(
             src: $src,
-            alt: $alt ?? (is_string($customAlt) ? $customAlt : (string) data_get($media, 'name', '')),
+            alt: $alt ?? (is_string($customAlt) && $customAlt !== '' ? $customAlt : ($fallbackAlt ?? (string) data_get($media, 'name', ''))),
             srcset: is_string($srcset) && $srcset !== '' ? $srcset : null,
             caption: $caption,
             href: $href,

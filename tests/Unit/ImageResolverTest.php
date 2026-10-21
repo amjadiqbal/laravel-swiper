@@ -87,11 +87,72 @@ it('takes Spatie Media items with their own srcset', function () {
 
     [$direct] = resolver()->resolve([$media], conversion: 'large');
     [$viaModel] = resolver()->resolve([['photo' => $media, 'title' => 'Model title']]);
+    [$named] = resolver()->resolve([['photo' => $media, 'title' => 'Model title', 'caption_alt' => 'Named']], altField: 'caption_alt');
+
+    $noAlt = new class
+    {
+        public string $name = 'IMG_0042';
+
+        public function getUrl(string $conversion = ''): string
+        {
+            return 'https://media.test/x.jpg';
+        }
+
+        public function getSrcset(string $conversion = ''): string
+        {
+            return '';
+        }
+
+        public function getCustomProperty(string $name): mixed
+        {
+            return null;
+        }
+    };
+    [$fallback] = resolver()->resolve([['photo' => $noAlt, 'title' => 'Model title']]);
+    [$bare] = resolver()->resolve([$noAlt]);
 
     expect($direct->src)->toBe('https://media.test/beach-large.jpg')
         ->and($direct->srcset)->toBe('https://media.test/beach-320.jpg 320w')
         ->and($direct->alt)->toBe('Empty beach at sunset')
-        ->and($viaModel->alt)->toBe('Model title');
+        ->and($viaModel->alt)->toBe('Empty beach at sunset')
+        ->and($named->alt)->toBe('Named')
+        ->and($fallback->alt)->toBe('Model title')
+        ->and($bare->alt)->toBe('IMG_0042');
+});
+
+it('drops link targets that are not http(s), mailto, tel or relative', function () {
+    $links = [
+        'https://shop.test/a', 'http://shop.test/b', '/products/c', 'products/d', '?page=2', '#top', '//cdn.test/e',
+        'mailto:hi@shop.test', 'tel:+15551234', 'javascript:alert(1)', ' JaVaScRiPt:alert(1)', "java\tscript:alert(1)",
+        "java\nscript:alert(1)", 'data:text/html,<script>alert(1)</script>', 'vbscript:msgbox(1)', 'file:///etc/passwd',
+    ];
+
+    $hrefs = array_map(fn (Image $i) => $i->href, resolver()->resolve(array_map(fn ($href) => ['src' => 'https://cdn.test/x.jpg', 'href' => $href], $links)));
+
+    expect($hrefs)->toBe([
+        'https://shop.test/a', 'http://shop.test/b', '/products/c', 'products/d', '?page=2', '#top', '//cdn.test/e',
+        'mailto:hi@shop.test', 'tel:+15551234', null, null, null, null, null, null, null,
+    ])
+        ->and(resolver()->resolve([new Image('https://cdn.test/x.jpg', href: 'javascript:alert(1)')])[0]->href)->toBeNull();
+});
+
+it('signs URLs on disks configured for temporary URLs', function () {
+    Storage::fake('private');
+    Storage::disk('private')->put('vault/a.jpg', 'x');
+    $fake = Storage::disk('private');
+    $fake->buildTemporaryUrlsUsing(fn (string $path, $expiration) => 'https://signed.test/'.$path.'?expires='.$expiration->getTimestamp());
+
+    config(['swiper.images.temporary_urls' => ['private' => 30]]);
+
+    [$signed] = resolver()->resolve(['vault/a.jpg'], 'private');
+    [$plain] = resolver()->resolve(['photos/a.jpg'], 'public');
+
+    expect($signed->src)->toStartWith('https://signed.test/vault/a.jpg?expires=')
+        ->and($signed->path)->toBe('vault/a.jpg')
+        ->and($plain->src)->toBe(Storage::disk('public')->url('photos/a.jpg'));
+
+    config(['swiper.images.temporary_urls' => 15]);
+    expect(resolver()->resolve(['vault/a.jpg'], 'private')[0]->src)->toStartWith('https://signed.test/');
 });
 
 it('lists a disk folder in natural order, images only, with readable alt text', function () {

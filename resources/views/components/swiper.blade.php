@@ -10,7 +10,8 @@
         'reducedMotion' => (bool) config('swiper.reduced_motion', true),
         'labels' => ['pause' => __('swiper::swiper.pause'), 'play' => __('swiper::swiper.play')],
     ];
-    $hash = md5(json_encode($state).$slotHtml.serialize($slides));
+    // Stored paths, not URLs: a signed temporary URL changes on every render but the image doesn't.
+    $hash = md5(json_encode($state).$slotHtml.serialize(array_map(fn ($image) => [$image->path ?? $image->src, $image->alt, $image->caption, $image->href, $image->srcset !== null && $image->path !== null ? 'srcset' : $image->srcset], $slides)));
     $domId = $resolvedId($hash);
     $state['thumbs'] = $renderThumbs ? $domId.'-thumbs' : $thumbsTarget;
     $sizesAttr = $imageSizes();
@@ -25,7 +26,8 @@
         @foreach ($slides as $index => $image)
             <div class="swiper-slide">
                 @if ($image->caption)<figure class="laravel-swiper-figure">@endif
-                @if ($image->href && ! $isThumbs)<a href="{{ $image->href }}" class="laravel-swiper-link">@endif
+                @php($href = $isThumbs ? null : \AmjadIqbal\LaravelSwiper\Support\SafeUrl::href($image->href))
+                @if ($href)<a href="{{ $href }}" class="laravel-swiper-link">@endif
                 <x-swiper.image
                     :src="$image->src"
                     :alt="$image->alt"
@@ -37,7 +39,7 @@
                     :priority="$lazy && $index === 0 && ! $isThumbs"
                     :aspect="$aspect"
                     :fit="$fit" />
-                @if ($image->href && ! $isThumbs)</a>@endif
+                @if ($href)</a>@endif
                 @if ($image->caption)<figcaption class="laravel-swiper-caption">{{ $image->caption }}</figcaption></figure>@endif
             </div>
         @endforeach

@@ -10,7 +10,8 @@
 [Swiper](https://swiperjs.com) sliders, carousels and image galleries for Laravel as Blade components.
 Navigation, pagination, thumbs, autoplay, effects and lazy loading are typed props. The carousels keep
 working through Livewire updates and `wire:navigate`. Slides can come from an Eloquent collection, Spatie
-Media Library or a folder on any storage disk, with responsive `srcset` images. Keyboard and screen-reader
+Media Library or a folder on a storage disk (public or, with signed URLs, private), as lazy images with
+`sizes` worked out for you and a `srcset` from Spatie or your image resizer. Keyboard and screen-reader
 support is on by default. No JavaScript to write, no npm build step.
 
 [![Latest Version](https://img.shields.io/packagist/v/amjadiqbal/laravel-swiper.svg?style=flat-square)](https://packagist.org/packages/amjadiqbal/laravel-swiper)
@@ -18,7 +19,7 @@ support is on by default. No JavaScript to write, no npm build step.
 [![License](https://img.shields.io/packagist/l/amjadiqbal/laravel-swiper.svg?style=flat-square)](LICENSE.md)
 
 <p align="center">
-  <img alt="A photo gallery carousel built from a storage folder, with arrows, pagination bullets and a strip of thumbnails underneath" src="art/screenshot.png" width="100%">
+  <img alt="The demo carousel built from a storage folder of numbered placeholder images, showing slide 1, arrows, pagination bullets and a strip of thumbnails underneath" src="art/screenshot.png" width="100%">
 </p>
 
 ```blade
@@ -46,9 +47,10 @@ Dropping Swiper into a Laravel app takes ten minutes. The problems start later:
   never starts at all. This package rebuilds a carousel only when its content changed and keeps it on the
   same slide. An unrelated update (a counter elsewhere in the component) leaves it exactly as it was.
 - **Images come from storage, not a hard-coded array.** Pass a collection of models, Spatie Media items or
-  a disk folder (local or S3) and get `<img>` tags with `srcset`, `sizes` worked out from your
+  a disk folder (local, S3, public or private) and get `<img>` tags with `sizes` worked out from your
   breakpoints, `loading="lazy"`, a fixed aspect ratio (no layout shift) and a high fetch priority on the
-  first slide.
+  first slide. Spatie items bring their own `srcset`; for other images, point the package at your image
+  resizer once (see [Responsive srcset](#responsive-srcset)).
 - **Accessibility is easy to get wrong.** Every carousel is a labelled region with real `<button>`
   arrows and translated screen-reader messages. Autoplay gets a pause button and stops while focus is
   inside. It also respects `prefers-reduced-motion`. Arrow keys move only the carousel you are using,
@@ -109,7 +111,10 @@ Requires PHP 8.3+ and Laravel 12 or 13. Livewire 3 or 4 is optional.
   comes from `alt`, `title` or `name`. Captions come from `caption`, links from `href` or `link`. Each
   `*-field` accepts dot notation or a closure. Arrays can also carry `srcset`, `width` and `height`.
 - **Spatie Media Library** items (or a model attribute that returns one) use their own URL and responsive
-  `srcset`. The alt text is the media's `alt` custom property, falling back to its name.
+  `srcset`. Alt text: a named `alt-field` if you pass one, else the media's `alt` custom property, else the
+  model's `alt`, `title` or `name`, else the media's name.
+- **Links** from `link-field` are only rendered when they are `http(s)`, `mailto`, `tel` or relative URLs;
+  anything else (such as `javascript:`) is dropped, so user-supplied links are safe to pass.
 - **Folders.** `folder="gallery" disk="s3"` lists every image file directly in that folder, in natural
   order (`img2` before `img10`). Alt text comes from the file name: `01-harbour-at-noon.jpg` becomes
   "Harbour at noon". Pass `:alt-field="fn ($path) => ..."` to set your own. Set
@@ -119,9 +124,26 @@ Requires PHP 8.3+ and Laravel 12 or 13. Livewire 3 or 4 is optional.
 - **Lazy loading.** The first image loads eagerly with `fetchpriority="high"`. The rest get
   `loading="lazy"` and Swiper's preloader. `:lazy="false"` loads them all eagerly.
 
+### Private disks and buckets
+
+By default image URLs come from the disk's `url()`, which only works for public files. For a private disk
+or bucket, turn on signed URLs from `temporaryUrl()`:
+
+```php
+// config/swiper.php
+'images' => [
+    'temporary_urls' => ['s3-private' => 60],   // minutes per disk, or one number for every disk
+],
+```
+
+A Livewire update that doesn't change a carousel keeps the URLs it already has, so pick a lifetime longer
+than a typical visit. Local private disks need `'serve' => true` in `config/filesystems.php` to issue
+temporary URLs.
+
 ### Responsive `srcset`
 
-Laravel stores one file per image, so a `srcset` needs something that resizes. Point the package at it
+Out of the box only Spatie Media items (and arrays that carry their own `srcset`) get a `srcset`: Laravel
+stores one file per image, so the other widths need something that resizes. Point the package at it
 once:
 
 ```php
@@ -141,7 +163,8 @@ use AmjadIqbal\LaravelSwiper\Support\Image;
 Swiper::srcsetUsing(fn (Image $image, int $width) => route('img', ['w' => $width, 'path' => $image->path]));
 ```
 
-`sizes` is worked out from `slides-per-view` and `breakpoints`. For example,
+With signed URLs, build the srcset with `Swiper::srcsetUsing()` (a query string appended to a signed URL
+breaks its signature). `sizes` is worked out from `slides-per-view` and `breakpoints`. For example,
 `:breakpoints="[768 => 2]"` gives `(min-width: 768px) 50vw, 100vw`. Pass `sizes` to override it. SVGs
 never get a srcset.
 
@@ -200,7 +223,7 @@ $this->dispatch('swiper:go', id: 'gallery', index: 2);   // Livewire
 `swiper:init` and `swiper:slide-change` bubble from the carousel with
 `{ id, index, activeIndex, total, swiper }`. From plain JavaScript use `LaravelSwiper.get('gallery')` to
 get the Swiper instance, `LaravelSwiper.init(element)` after inserting HTML yourself, and
-`LaravelSwiper.destroy(element)`.
+`LaravelSwiper.destroy(element)`, where `element` is a carousel or any element containing carousels.
 
 ## Accessibility
 
@@ -244,7 +267,8 @@ php artisan vendor:publish --tag=swiper-config
 ```
 
 `config/swiper.php` holds the asset URLs and hashes, the default Swiper options for every carousel,
-`reduced_motion` and the image settings (`disk`, `srcset_url`, `widths`, `extensions`, `folder_cache`).
+`reduced_motion` and the image settings (`disk`, `srcset_url`, `widths`, `extensions`, `folder_cache`,
+`temporary_urls`).
 `php artisan about` shows the installed version and asset mode.
 
 ## Testing

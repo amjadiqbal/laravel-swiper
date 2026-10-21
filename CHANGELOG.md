@@ -6,8 +6,24 @@ All notable changes to `amjadiqbal/laravel-swiper` are documented here. The form
 
 ## [Unreleased]
 
+### Security
+
+- Links from `link-field` (or an array's `href`/`link`) are now filtered: only `http(s)`, `mailto`, `tel`
+  and relative URLs are rendered. v1.0.0 escaped them but let a `javascript:` URL through, so a
+  user-controlled field could run script when the slide was clicked.
+
+### Added
+
+- Private disks and buckets: `swiper.images.temporary_urls` (minutes, for every disk or per disk) uses
+  `temporaryUrl()` instead of `url()`. Signed URLs no longer make Livewire rebuild an unchanged carousel.
+
 ### Fixed
 
+- `LaravelSwiper.destroy(element)` also destroys `element` itself when it is a carousel.
+- Spatie Media reached through a model attribute: the media's `alt` custom property now comes before the
+  model's `title`/`name` (a named `alt-field` still wins), as the README described.
+- README: says plainly that a generated `srcset` needs `srcset_url` or `Swiper::srcsetUsing()` (Spatie
+  items bring their own), and the screenshot's alt text describes the placeholder demo images.
 - Autoplay could freeze after keyboard focus left a carousel: Swiper 14's `autoplay.resume()` can report
   running without advancing. Focus now stops and restarts autoplay instead, and the pause button keeps
   saying "Pause" while focus is inside.
