@@ -6,6 +6,10 @@ All notable changes to `amjadiqbal/laravel-swiper` are documented here. The form
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-21
+
+First release.
+
 ### Added
 
 - `<x-swiper>`, `<x-swiper.slide>` and `<x-swiper.image>` Blade components for Swiper 14.3.0, with typed,
@@ -24,3 +28,6 @@ All notable changes to `amjadiqbal/laravel-swiper` are documented here. The form
   carousel in use.
 - Assets from jsDelivr with SRI (default), from your own server (`--tag=swiper-assets`), or your own
   bundle; CSP nonce support; `@swiperAssets`; a `php artisan about` entry.
+
+[Unreleased]: https://github.com/amjadiqbal/laravel-swiper/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/amjadiqbal/laravel-swiper/releases/tag/v1.0.0
