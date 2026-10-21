@@ -20,7 +20,7 @@
     ],
     "type": "library",
     "license": "MIT",
-    "homepage": "https://github.com/amjadiqbal/laravel-swiper",
+    "homepage": "https://amjad.com.pk/laravel/packages/laravel-swiper",
     "authors": [
         {
             "name": "Amjad Iqbal",
@@ -31,7 +31,7 @@
     "support": {
         "issues": "https://github.com/amjadiqbal/laravel-swiper/issues",
         "source": "https://github.com/amjadiqbal/laravel-swiper",
-        "docs": "https://github.com/amjadiqbal/laravel-swiper#readme"
+        "docs": "https://amjad.com.pk/laravel/packages/laravel-swiper"
     },
     "require": {
         "php": "^8.3",

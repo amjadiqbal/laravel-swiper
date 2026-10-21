@@ -18,6 +18,8 @@ support is on by default. No JavaScript to write, no npm build step.
 [![PHP Version](https://img.shields.io/packagist/php-v/amjadiqbal/laravel-swiper?style=flat-square)](https://packagist.org/packages/amjadiqbal/laravel-swiper)
 [![License](https://img.shields.io/packagist/l/amjadiqbal/laravel-swiper.svg?style=flat-square)](LICENSE.md)
 
+**Docs and demo:** [amjad.com.pk/laravel/packages/laravel-swiper](https://amjad.com.pk/laravel/packages/laravel-swiper)
+
 <p align="center">
   <img alt="The demo carousel built from a storage folder of numbered placeholder images, showing slide 1, arrows, pagination bullets and a strip of thumbnails underneath" src="art/screenshot.png" width="100%">
 </p>
